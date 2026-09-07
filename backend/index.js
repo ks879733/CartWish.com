@@ -61,7 +61,10 @@ mongoose.connect(process.env.DB_ID)
 });
 
 app.use(express.json())
-app.use(cors())
+app.use(cors({
+  origin: true,
+  credentials: true,
+}))
 app.use(cookieParser())
 
 app.use("/upload/category", express.static(path.join(__dirname, "upload/category")));
