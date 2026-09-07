@@ -80,6 +80,7 @@ router.get("/", async (req, res) => {
 
   const products = await Product.find(query)
   .select("-description -seller -category -__v")
+  .sort({ createdAt: -1, _id: -1 })
   .skip((page - 1) * perPage)
   .limit(perPage)
   .lean();

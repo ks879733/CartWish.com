@@ -9,6 +9,7 @@ const productSchema = new mongoose.Schema({
   price: { type: Number, required: true, min:0 },
   stock: { type: Number, required: true, min:0 },
   images: { type: [String], required:true },
+  createdAt: { type: Date, default: Date.now },
   review: [
     {
       user: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
