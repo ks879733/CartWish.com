@@ -1,3 +1,8 @@
+export const API_BASE_URL = "https://cartwish-com.onrender.com";
+
+export const apiUrl = (path) =>
+  path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
+
 let refreshPromise = null;
 
 const getAccessToken = () => localStorage.getItem("accessToken");
@@ -21,7 +26,7 @@ const redirectToLogin = () => {
 
 const refreshAccessToken = async () => {
   if (!refreshPromise) {
-    refreshPromise = fetch("/api/user/refresh", {
+    refreshPromise = fetch(apiUrl("/api/user/refresh"), {
       method: "POST",
       credentials: "include",
     })
@@ -52,7 +57,7 @@ export const authenticatedFetch = async (path, options = {}, canRetry = true) =>
   const token = getAccessToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     ...options,
     credentials: "include",
     headers,

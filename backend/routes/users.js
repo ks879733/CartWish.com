@@ -37,12 +37,13 @@ router.post("/",async (req, res) => {
   newUser.refreshToken = newHashedRefreshToken;
   await newUser.save();
 
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000
-  })
+  res.cookie("refreshToken", refreshToken, {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60 * 1000
+});
 
   res.status(201).json(accessToken)
 })
@@ -63,12 +64,13 @@ router.post('/login',async (req, res) => {
   user.refreshToken = newHashedRefreshToken;
   await user.save();
 
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
-  })
+  res.cookie("refreshToken", refreshToken, {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60 * 1000
+});
 
   res.status(201).json(accessToken)
 })
@@ -100,12 +102,13 @@ router.post('/refresh', async (req, res) => {
   user.refreshToken = newHashedRefreshToken;
   await user.save();
 
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000
-  })
+  res.cookie("refreshToken", refreshToken, {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60 * 1000
+});
 
   res.status(201).json(accessToken)
 })
@@ -128,11 +131,11 @@ router.post('/logout',async (req, res) => {
   user.refreshToken = null;
   await user.save();
   res.clearCookie("refreshToken", {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000
-  });
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  path: "/"
+});
   res.json({message: "Logout successfully"})
 })
 

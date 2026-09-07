@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Check, ChevronDown, PackageCheck, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import { authenticatedFetch } from "../api";
+import { apiUrl, authenticatedFetch } from "../api";
 
 const statuses = ["Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"];
 
 const productImageUrl = (filename) =>
   filename
-    ? `/upload/products/${filename}`
+    ? apiUrl(`/upload/products/${filename}`)
     : "https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=160&q=80";
 
 const normalizeStatus = (status) => {

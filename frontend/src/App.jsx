@@ -39,7 +39,7 @@ import AdminOrdersPage from "./pages/AdminOrdersPage";
 import LogoutMenu from "./pages/LogoutMenu";
 import AddressPage from "./pages/AddressPage";
 import AddAnotherAddress from "./pages/AddAnotherAddress";
-import { authenticatedFetch } from "./api";
+import { apiUrl, authenticatedFetch } from "./api";
 
 const CartCountContext = createContext({
   cartCount: 0,
@@ -47,7 +47,9 @@ const CartCountContext = createContext({
 });
 
 const api = async (path) => {
-  const response = await fetch(path);
+  const response = await fetch(apiUrl(path), {
+    credentials: "include",
+  });
   if (!response.ok) throw new Error("Unable to load data");
   return response.json();
 };
@@ -73,7 +75,7 @@ const normalizeProductImages = (images) => {
 
 const imageUrl = (folder, filename) =>
   filename
-    ? `/upload/${folder}/${filename}`
+    ? apiUrl(`/upload/${folder}/${filename}`)
     : "https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=700&q=80";
 
 const formatSavedAddress = ({ name, phone, village, city, state, pincode }) =>
@@ -184,7 +186,10 @@ function Header({
     }
     const timer = setTimeout(() => {
       fetch(
-        `/api/products/suggestions?search=${encodeURIComponent(query.trim())}`,
+        apiUrl(
+          `/api/products/suggestions?search=${encodeURIComponent(query.trim())}`,
+        ),
+        { credentials: "include" },
       )
         .then((response) => (response.ok ? response.json() : []))
         .then(setSuggestions)
@@ -1359,7 +1364,7 @@ function LoginPage() {
     setSubmitting(true);
     setError("");
     try {
-      const response = await fetch("/api/user/login", {
+      const response = await fetch(apiUrl("/api/user/login"), {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

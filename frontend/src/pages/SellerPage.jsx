@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { authenticatedFetch } from "../api";
+import { apiUrl, authenticatedFetch } from "../api";
 
 const initialForm = {
   title: "",
@@ -19,7 +19,9 @@ export default function SellerPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch("/api/category")
+    fetch(apiUrl("/api/category"), {
+      credentials: "include",
+    })
       .then((response) => response.json())
       .then(setCategories)
       .catch(() => setError("Unable to load categories"));
