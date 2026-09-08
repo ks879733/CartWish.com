@@ -32,6 +32,7 @@ import {
   Trash2,
   UserRound,
   Check,
+  ChevronDown,
 } from "lucide-react";
 import SellerPage from "./pages/SellerPage";
 import AdminPage from "./pages/AdminPage";
@@ -339,8 +340,53 @@ function Categories({ categories, selected, onSelect, open, onToggle }) {
 
 function ProductCard({ product, onDeleted }) {
   const navigate = useNavigate();
+  const { setCartCount } = useContext(CartCountContext);
   const rating = product.review?.averageRating || 0;
   const productImage = normalizeProductImages(product.images)[0] || "";
+  const [saved, setSaved] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("wishlist") || "[]").includes(
+        product._id,
+      );
+    } catch {
+      return false;
+    }
+  });
+  const [adding, setAdding] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const toggleWishlist = (event) => {
+    event.stopPropagation();
+    const current = JSON.parse(localStorage.getItem("wishlist") || "[]");
+    const next = saved
+      ? current.filter((item) => item !== product._id)
+      : [...new Set([...current, product._id])];
+    localStorage.setItem("wishlist", JSON.stringify(next));
+    setSaved(!saved);
+  };
+  const addToCart = async (event) => {
+    event.stopPropagation();
+    if (!localStorage.getItem("accessToken")) {
+      navigate("/login");
+      return;
+    }
+    setAdding(true);
+    try {
+      const response = await authenticatedFetch(`/api/cart/${product._id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity: 1 }),
+      });
+      const data = await readResponse(response);
+      if (!response.ok) throw new Error(data.message || "Unable to add item");
+      setCartCount(Number(data.cart?.totalProducts) || 0);
+      setFeedback("Added to cart");
+      window.setTimeout(() => setFeedback(""), 1800);
+    } catch (addError) {
+      setFeedback(addError.message);
+    } finally {
+      setAdding(false);
+    }
+  };
 
   return (
     <article
@@ -349,8 +395,23 @@ function ProductCard({ product, onDeleted }) {
     >
       <div className="product-image">
         <img src={imageUrl("products", productImage)} alt={product.title} />
+        <button
+          className={`wishlist-button ${saved ? "is-saved" : ""}`}
+          type="button"
+          onClick={toggleWishlist}
+          aria-label={
+            saved
+              ? `Remove ${product.title} from wishlist`
+              : `Save ${product.title} to wishlist`
+          }
+        >
+          <Heart size={17} fill={saved ? "currentColor" : "none"} />
+        </button>
+        {!product.stock && (
+          <span className="product-badge sold-out">Out of stock</span>
+        )}
         {product.stock <= 5 && product.stock > 0 && (
-          <span className="stock-badge">Almost gone</span>
+          <span className="product-badge">Almost gone</span>
         )}
       </div>
       <div className="product-info">
@@ -367,8 +428,137 @@ function ProductCard({ product, onDeleted }) {
             {product.stock ? `${product.stock} in stock` : "Out of stock"}
           </span>
         </div>
+        <button
+          className="card-cart-button"
+          type="button"
+          onClick={addToCart}
+          disabled={!product.stock || adding}
+        >
+          {adding ? "Adding..." : product.stock ? "Add to cart" : "Unavailable"}
+          <ShoppingBag size={15} />
+        </button>
+        {feedback && (
+          <span className="card-feedback" role="status">
+            {feedback}
+          </span>
+        )}
       </div>
     </article>
+  );
+}
+
+function Hero({ onShop }) {
+  return (
+    <section className="hero-section">
+      <div className="hero-copy">
+        <p className="eyebrow">The considered edit</p>
+        <h1>
+          Everything you love, <em>in one place.</em>
+        </h1>
+        <p>
+          Discover useful, beautiful things chosen to make everyday living feel
+          a little better.
+        </p>
+        <button className="hero-button" type="button" onClick={onShop}>
+          Shop the collection <ArrowRight size={17} />
+        </button>
+      </div>
+      <div
+        className="hero-visual"
+        aria-label="A curated selection of CartWish products"
+      >
+        <div className="hero-orbit orbit-one" />
+        <div className="hero-orbit orbit-two" />
+        <div className="hero-product hero-product-main">CW</div>
+        <div className="hero-product hero-product-small">+</div>
+        <span className="hero-note">Curated for you</span>
+      </div>
+    </section>
+  );
+}
+
+function CategoryStrip({ categories, onSelect }) {
+  const fallbackCategories = [
+    "Smartphones",
+    "Laptops",
+    "Headphones",
+    "Gaming",
+    "Smart Watches",
+    "Drones",
+  ];
+  const items = categories.length
+    ? categories.slice(0, 6)
+    : fallbackCategories.map((name) => ({ name }));
+  return (
+    <section className="category-strip">
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">Find your next favourite</p>
+          <h2>Shop by category</h2>
+        </div>
+        <button
+          type="button"
+          className="text-link"
+          onClick={() => onSelect("")}
+        >
+          View all <ArrowRight size={15} />
+        </button>
+      </div>
+      <div className="category-cards">
+        {items.map((category) => (
+          <button
+            className="category-card"
+            key={category._id || category.name}
+            type="button"
+            onClick={() => onSelect(category.name)}
+          >
+            {category.image ? (
+              <img src={imageUrl("category", category.image)} alt="" />
+            ) : (
+              <span className="category-icon">
+                <ShoppingBag size={18} />
+              </span>
+            )}
+            <span>{category.name}</span>
+            <ArrowRight size={15} />
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="site-footer">
+      <div className="footer-brand">
+        <span className="brand">
+          cart<span>Wish</span>
+        </span>
+        <p>Useful things, chosen with feeling.</p>
+      </div>
+      <div className="footer-column">
+        <strong>Shop</strong>
+        <Link to="/products">All products</Link>
+        <Link to="/">Categories</Link>
+        <Link to="/products">New arrivals</Link>
+      </div>
+      <div className="footer-column">
+        <strong>Customer care</strong>
+        <a href="mailto:hello@cartwish.com">Contact us</a>
+        <span>Shipping & returns</span>
+        <span>FAQs</span>
+      </div>
+      <div className="footer-column">
+        <strong>Follow along</strong>
+        <div className="social-links">
+          <a href="https://instagram.com">Instagram</a>
+          <a href="https://facebook.com">Facebook</a>
+          <a href="https://twitter.com">Twitter</a>
+        </div>
+      </div>
+      <p className="footer-bottom">© 2026 CartWish. All rights reserved.</p>
+    </footer>
   );
 }
 
@@ -386,6 +576,10 @@ function Shop() {
   const [error, setError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const [sort, setSort] = useState("featured");
+  const [priceFilter, setPriceFilter] = useState("all");
+  const [ratingFilter, setRatingFilter] = useState("all");
+  const [stockOnly, setStockOnly] = useState(false);
 
   useEffect(() => {
     setSelected(selectedFromUrl);
@@ -419,6 +613,40 @@ function Shop() {
     setMenuOpen((current) => !current);
     setNavOpen(false);
   };
+  const displayedProducts = [...products]
+    .filter((product) => {
+      const price = Number(product.price);
+      if (priceFilter === "under-1000" && price >= 1000) return false;
+      if (priceFilter === "1000-5000" && (price < 1000 || price > 5000))
+        return false;
+      if (priceFilter === "5000-20000" && (price < 5000 || price > 20000))
+        return false;
+      if (priceFilter === "over-20000" && price <= 20000) return false;
+      if (
+        ratingFilter !== "all" &&
+        Number(product.review?.averageRating || 0) < Number(ratingFilter)
+      )
+        return false;
+      return !stockOnly || Number(product.stock) > 0;
+    })
+    .sort((left, right) => {
+      if (sort === "price-low") return Number(left.price) - Number(right.price);
+      if (sort === "price-high")
+        return Number(right.price) - Number(left.price);
+      if (sort === "rating")
+        return (
+          Number(right.review?.averageRating || 0) -
+          Number(left.review?.averageRating || 0)
+        );
+      return 0;
+    });
+  const resetFilters = () => {
+    setPriceFilter("all");
+    setRatingFilter("all");
+    setStockOnly(false);
+    setSort("featured");
+  };
+  const isHome = !selected && !search;
   return (
     <>
       <Header
@@ -428,7 +656,19 @@ function Shop() {
         onNavOpenChange={setNavOpen}
         onMenu={() => setMenuOpen((current) => !current)}
       />
-      <main className="shop-layout">
+      <main className={`shop-layout ${isHome ? "is-home" : ""}`}>
+        {isHome && (
+          <Hero
+            onShop={() =>
+              document
+                .querySelector(".catalog")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+          />
+        )}
+        {isHome && (
+          <CategoryStrip categories={categories} onSelect={chooseCategory} />
+        )}
         <Categories
           categories={categories}
           selected={selected}
@@ -451,7 +691,65 @@ function Shop() {
                 life.
               </p>
             </div>
-            <span className="result-count">{products.length} pieces</span>
+            <div className="catalog-tools">
+              <span className="result-count">
+                {displayedProducts.length} pieces
+              </span>
+              <label className="sort-control">
+                Sort by
+                <select
+                  value={sort}
+                  onChange={(event) => setSort(event.target.value)}
+                >
+                  <option value="featured">Featured</option>
+                  <option value="price-low">Price: low to high</option>
+                  <option value="price-high">Price: high to low</option>
+                  <option value="rating">Rating</option>
+                </select>
+                <ChevronDown size={14} />
+              </label>
+            </div>
+          </div>
+          <div className="filter-row">
+            <label>
+              Price{" "}
+              <select
+                value={priceFilter}
+                onChange={(event) => setPriceFilter(event.target.value)}
+              >
+                <option value="all">All prices</option>
+                <option value="under-1000">Under ₹1,000</option>
+                <option value="1000-5000">₹1,000 - ₹5,000</option>
+                <option value="5000-20000">₹5,000 - ₹20,000</option>
+                <option value="over-20000">₹20,000+</option>
+              </select>
+            </label>
+            <label>
+              Rating{" "}
+              <select
+                value={ratingFilter}
+                onChange={(event) => setRatingFilter(event.target.value)}
+              >
+                <option value="all">Any rating</option>
+                <option value="4">4+ stars</option>
+                <option value="3">3+ stars</option>
+              </select>
+            </label>
+            <label className="stock-filter">
+              <input
+                type="checkbox"
+                checked={stockOnly}
+                onChange={(event) => setStockOnly(event.target.checked)}
+              />{" "}
+              In stock
+            </label>
+            <button
+              type="button"
+              className="reset-filter"
+              onClick={resetFilters}
+            >
+              Reset filters
+            </button>
           </div>
           {error && <div className="state-message">{error}</div>}
           {loading ? (
@@ -460,9 +758,9 @@ function Shop() {
                 <div className="skeleton" key={item} />
               ))}
             </div>
-          ) : products.length ? (
+          ) : displayedProducts.length ? (
             <div className="product-grid">
-              {products.map((product) => (
+              {displayedProducts.map((product) => (
                 <ProductCard
                   product={product}
                   key={product._id}
@@ -1103,6 +1401,13 @@ function ProductDetailPage() {
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [saved, setSaved] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("wishlist") || "[]").includes(id);
+    } catch {
+      return false;
+    }
+  });
   const addToCart = async () => {
     if (!localStorage.getItem("accessToken")) {
       navigate("/login");
@@ -1144,6 +1449,14 @@ function ProductDetailPage() {
       },
     });
   };
+  const toggleWishlist = () => {
+    const current = JSON.parse(localStorage.getItem("wishlist") || "[]");
+    const next = saved
+      ? current.filter((item) => item !== id)
+      : [...new Set([...current, id])];
+    localStorage.setItem("wishlist", JSON.stringify(next));
+    setSaved(!saved);
+  };
   useEffect(() => {
     api(`/api/products/${id}`)
       .then(setProduct)
@@ -1168,6 +1481,13 @@ function ProductDetailPage() {
     <>
       <Header search="" setSearch={() => {}} onMenu={() => {}} />
       <main className="product-detail">
+        <nav className="breadcrumbs" aria-label="Breadcrumb">
+          <Link to="/">Home</Link>
+          <span>/</span>
+          <Link to="/products">Products</Link>
+          <span>/</span>
+          <strong>{product.title}</strong>
+        </nav>
         <div className="product-gallery">
           <div className="thumbnail-list">
             {images.map((image, index) => (
@@ -1251,6 +1571,14 @@ function ProductDetailPage() {
               <ArrowRight size={17} />
             </button>
           </div>
+          <button
+            className={`detail-wishlist ${saved ? "is-saved" : ""}`}
+            type="button"
+            onClick={toggleWishlist}
+          >
+            <Heart size={17} fill={saved ? "currentColor" : "none"} />{" "}
+            {saved ? "Saved to wishlist" : "Add to wishlist"}
+          </button>
           {(getUserRole() === "admin" || getUserRole() === "seller") && (
             <button
               className="delete-detail"
@@ -1276,6 +1604,41 @@ function ProductDetailPage() {
           )}
           {actionMessage && <p className="form-success">{actionMessage}</p>}
         </section>
+        {Array.isArray(product.review) && product.review.length > 0 && (
+          <section className="detail-reviews">
+            <div>
+              <p className="eyebrow">From the community</p>
+              <h2>Customer reviews</h2>
+            </div>
+            <div className="review-summary">
+              <strong>{rating.toFixed(1)}</strong>
+              <span>
+                <Star size={15} fill="currentColor" /> Based on{" "}
+                {product.review.length} reviews
+              </span>
+            </div>
+            <div className="review-list">
+              {product.review.slice(0, 4).map((review, index) => (
+                <article className="review-item" key={review._id || index}>
+                  <div>
+                    <strong>
+                      {review.userName || review.name || "CartWish customer"}
+                    </strong>
+                    <span>
+                      <Star size={13} fill="currentColor" /> {review.rating}
+                    </span>
+                  </div>
+                  <p>
+                    {review.comment ||
+                      review.text ||
+                      review.review ||
+                      "A lovely addition to my everyday."}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </>
   );
@@ -1617,6 +1980,7 @@ export default function App() {
         />
         <Route path="/cart" element={<CartPage />} />
       </Routes>
+      <Footer />
     </CartCountContext.Provider>
   );
 }
