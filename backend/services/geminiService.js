@@ -1,11 +1,16 @@
 const { GoogleGenAI } = require("@google/genai");
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+
+const apiKey = process.env.GEMINI_API_KEY;
+const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 const generateAssistantReply = async (message) => {
+  if (!ai) {
+    throw new Error("GEMINI_API_KEY is not configured on the backend.");
+  }
+
   const response = await ai.models.generateContent({
-    model: "gemini-3.8-flash",
+    model,
     contents: `You are CartWish's virtual shopping assistant.
 
     You help users with:
