@@ -15,7 +15,7 @@ const adminRouter = require('./routes/admin');
 const cartRouter = require('./routes/cart');
 const orderRouter = require('./routes/order');
 const addressRouter = require('./routes/address')
-
+const assistanceRouter = require('./routes/assistant');
 const app = express();
 
 const logger = winston.createLogger({
@@ -76,6 +76,7 @@ app.use('/api/admin', adminRouter);
 app.use("/api/cart", cartRouter)
 app.use("/api/order", orderRouter);
 app.use("/api/address", addressRouter);
+app.use("/api/assistant", assistanceRouter)
 app.use((error, req, res, next) => {
   console.log('Error middleware is running');
   logger.error(error.message, {

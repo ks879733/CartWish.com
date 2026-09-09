@@ -40,6 +40,7 @@ import AdminOrdersPage from "./pages/AdminOrdersPage";
 import LogoutMenu from "./pages/LogoutMenu";
 import AddressPage from "./pages/AddressPage";
 import AddAnotherAddress from "./pages/AddAnotherAddress";
+import CartWishAssistant from "./components/CartWishAssistant";
 import { apiUrl, authenticatedFetch } from "./api";
 
 const CartCountContext = createContext({
@@ -1981,6 +1982,7 @@ export default function App() {
         <Route path="/cart" element={<CartPage />} />
       </Routes>
       <Footer />
+      <CartWishAssistant />
     </CartCountContext.Provider>
   );
 }
